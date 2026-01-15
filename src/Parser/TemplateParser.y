@@ -164,7 +164,11 @@ class TemplateParser
         $this->compiler = $compiler;
         $this->template = $this->compiler->getTemplate();
         $this->smarty = $this->template->getSmarty();
-        $this->security = $this->smarty->security_policy ?? false;
+        $securityPolicy = $this->smarty->security_policy;
+        if ($securityPolicy !== null && !($securityPolicy instanceof \Smarty\Security)) {
+            throw new \Smarty\Exception('SecurityPolicy has been corrupted');
+        }
+        $this->security = $securityPolicy ?? false;
         $this->current_buffer = $this->root_buffer = new TemplateParseTree();
     }
 

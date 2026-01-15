@@ -346,6 +346,17 @@ class Template extends BaseCompiler {
 		$this->printExpressionCompiler = new PrintExpressionCompiler();
 	}
 
+	private function getSecurityPolicyOrNull(): ?\Smarty\Security {
+		$securityPolicy = $this->smarty->security_policy;
+		if ($securityPolicy === null) {
+			return null;
+		}
+		if (!($securityPolicy instanceof \Smarty\Security)) {
+			throw new CompilerException('SecurityPolicy has been corrupted');
+		}
+		return $securityPolicy;
+	}
+
 	/**
 	 * Method to compile a Smarty template
 	 *
@@ -606,8 +617,8 @@ class Template extends BaseCompiler {
 	 */
 	public function getTagCompiler($tag): ?\Smarty\Compile\CompilerInterface {
         $tag = strtolower($tag);
-
-		if (isset($this->smarty->security_policy) && !$this->smarty->security_policy->isTrustedTag($tag, $this)) {
+		$securityPolicy = $this->getSecurityPolicyOrNull();
+		if ($securityPolicy !== null && !$securityPolicy->isTrustedTag($tag, $this)) {
 			return null;
 		}
 
@@ -628,8 +639,8 @@ class Template extends BaseCompiler {
 	 * @return bool|\Smarty\Compile\Modifier\ModifierCompilerInterface tag compiler object or false if not found or untrusted by security policy
 	 */
 	public function getModifierCompiler($modifier) {
-
-		if (isset($this->smarty->security_policy) && !$this->smarty->security_policy->isTrustedModifier($modifier, $this)) {
+		$securityPolicy = $this->getSecurityPolicyOrNull();
+		if ($securityPolicy !== null && !$securityPolicy->isTrustedModifier($modifier, $this)) {
 			return false;
 		}
 
@@ -1111,10 +1122,11 @@ class Template extends BaseCompiler {
 		// $args contains the attributes parsed and compiled by the lexer/parser
 
 		$this->handleNocacheFlag($args);
+		$securityPolicy = $this->getSecurityPolicyOrNull();
 
 		// compile built-in tags
 		if ($tagCompiler = $this->getTagCompiler($tag)) {
-			if (!isset($this->smarty->security_policy) || $this->smarty->security_policy->isTrustedTag($tag, $this)) {
+			if ($securityPolicy === null || $securityPolicy->isTrustedTag($tag, $this)) {
 				$this->tag_nocache = $this->tag_nocache | !$tagCompiler->isCacheable();
 				$_output = $tagCompiler->compile($args, $this, $parameter);
 				if (!empty($parameter['modifierlist'])) {
@@ -1147,7 +1159,7 @@ class Template extends BaseCompiler {
 
 		// check if tag is a function
 		if ($this->smarty->getFunctionHandler($tag)) {
-			if (!isset($this->smarty->security_policy) || $this->smarty->security_policy->isTrustedTag($tag, $this)) {
+			if ($securityPolicy === null || $securityPolicy->isTrustedTag($tag, $this)) {
 				return (new \Smarty\Compile\PrintExpressionCompiler())->compile(
 					['nofilter'], // functions are never auto-escaped
 					$this,
@@ -1158,7 +1170,7 @@ class Template extends BaseCompiler {
 
 		// check if tag is a block
 		if ($this->smarty->getBlockHandler($base_tag)) {
-			if (!isset($this->smarty->security_policy) || $this->smarty->security_policy->isTrustedTag($base_tag, $this)) {
+			if ($securityPolicy === null || $securityPolicy->isTrustedTag($base_tag, $this)) {
 				return $this->blockCompiler->compile($args, $this, $parameter, $tag, $base_tag);
 			}
 		}

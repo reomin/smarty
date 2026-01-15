@@ -40,7 +40,10 @@ class FilePlugin extends BasePlugin {
 		);
 
 		if ($path = $this->getFilePath($source->name, $source->getSmarty(), $source->isConfig)) {
-			if (isset($source->getSmarty()->security_policy) && is_object($source->getSmarty()->security_policy)) {
+			if (isset($source->getSmarty()->security_policy)) {
+				if (!($source->getSmarty()->security_policy instanceof \Smarty\Security)) {
+					throw new Exception('SecurityPolicy has been corrupted');
+				}
 				$source->getSmarty()->security_policy->isTrustedResourceDir($path, $source->isConfig);
 			}
 			$source->exists = true;

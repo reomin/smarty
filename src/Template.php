@@ -135,7 +135,10 @@ class Template extends TemplateBase {
 		$this->source = $_isConfig ? Config::load($this) : Source::load($this);
 		$this->compiled = Compiled::load($this);
 
-		if ($smarty->security_policy) {
+		if (isset($smarty->security_policy)) {
+			if (!($smarty->security_policy instanceof \Smarty\Security)) {
+				throw new Exception('SecurityPolicy has been corrupted');
+			}
 			$smarty->security_policy->registerCallBacks($this);
 		}
 	}

@@ -86,7 +86,10 @@ abstract class BasePlugin
         $_known_stream = stream_get_wrappers();
         if (in_array($type, $_known_stream)) {
             // is known stream
-            if (is_object($smarty->security_policy)) {
+            if (isset($smarty->security_policy)) {
+                if (!($smarty->security_policy instanceof \Smarty\Security)) {
+                    throw new Exception('SecurityPolicy has been corrupted');
+                }
                 $smarty->security_policy->isTrustedStream($type);
             }
             return $smarty->_resource_handlers[ $type ] = new StreamPlugin();
